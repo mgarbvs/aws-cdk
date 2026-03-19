@@ -1,0 +1,20 @@
+{
+  "version": "52.0.0",
+  "files": {
+    "07b3e350f67f17d45798a895a5a1cf2c9a874bfdaff01cf50a90eb9eca89471a": {
+      "displayName": "TableEncKMSUserKeyTest Template",
+      "source": {
+        "path": "TableEncKMSUserKeyTest.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region-05a43bca": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "07b3e350f67f17d45798a895a5a1cf2c9a874bfdaff01cf50a90eb9eca89471a.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

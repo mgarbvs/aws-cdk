@@ -1,0 +1,65 @@
+{
+  "/TableEncKMSAutoKeyTest/TableBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/Namespace": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/Table": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/TableBucket/TableBucket": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "TableBucket0BF18B0D"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/Namespace/Namespace": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NamespaceADFEA57E"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/Table/Key": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "description": "*",
+        "enableKeyRotation": true
+      }
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/Table/Table": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "Table4C2D914F"
+    }
+  ],
+  "/TableEncKMSAutoKeyTest/Table/Key/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "TableKey25666F95"
+    }
+  ]
+}

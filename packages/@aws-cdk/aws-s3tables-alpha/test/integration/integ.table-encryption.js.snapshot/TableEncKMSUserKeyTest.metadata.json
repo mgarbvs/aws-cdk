@@ -1,0 +1,64 @@
+{
+  "/TableEncKMSUserKeyTest/Key": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "removalPolicy": "destroy"
+      }
+    }
+  ],
+  "/TableEncKMSUserKeyTest/TableBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/Namespace": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/Table": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/Key/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "Key961B73FD"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/TableBucket/TableBucket": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "TableBucket0BF18B0D"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/Namespace/Namespace": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NamespaceADFEA57E"
+    }
+  ],
+  "/TableEncKMSUserKeyTest/Table/Table": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "Table4C2D914F"
+    }
+  ]
+}

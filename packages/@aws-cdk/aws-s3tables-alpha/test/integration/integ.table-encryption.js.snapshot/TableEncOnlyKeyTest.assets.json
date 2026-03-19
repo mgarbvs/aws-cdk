@@ -1,0 +1,20 @@
+{
+  "version": "52.0.0",
+  "files": {
+    "6f1001fcd82c2163c7adfabf17b60f7cc6fdb1b9fd374efb186a7838d3c2764b": {
+      "displayName": "TableEncOnlyKeyTest Template",
+      "source": {
+        "path": "TableEncOnlyKeyTest.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region-09baaf48": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "6f1001fcd82c2163c7adfabf17b60f7cc6fdb1b9fd374efb186a7838d3c2764b.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

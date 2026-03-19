@@ -1,5 +1,6 @@
 import { EOL } from 'os';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import { CfnTable, CfnTablePolicy } from 'aws-cdk-lib/aws-s3tables';
 import type {
   IResource,
@@ -15,6 +16,7 @@ import { propertyInjectable } from 'aws-cdk-lib/core/lib/prop-injectable';
 import type { Construct } from 'constructs';
 import type { INamespace } from './namespace';
 import * as perms from './permissions';
+import { TableBucketEncryption } from './table-bucket';
 
 /**
  * Represents an S3 Table.
@@ -43,6 +45,11 @@ export interface ITable extends IResource {
    * @attribute
    */
   readonly region?: string;
+
+  /**
+   * Optional KMS encryption key associated with this table.
+   */
+  readonly encryptionKey?: kms.IKey;
 
   /**
    * Adds a statement to the resource policy for a principal (i.e.
@@ -105,6 +112,11 @@ abstract class TableBase extends Resource implements ITable {
   public abstract readonly tableArn: string;
 
   /**
+   * Optional KMS encryption key associated with this table.
+   */
+  public abstract readonly encryptionKey?: kms.IKey;
+
+  /**
    * The resource policy associated with this table.
    *
    * If `autoCreatePolicy` is true, a `TablePolicy` will be created upon the
@@ -143,6 +155,7 @@ abstract class TableBase extends Resource implements ITable {
     return this.grant(
       identity,
       perms.TABLE_READ_ACCESS,
+      perms.KEY_READ_ACCESS,
       this.tableArn,
     );
   }
@@ -154,6 +167,7 @@ abstract class TableBase extends Resource implements ITable {
     return this.grant(
       identity,
       perms.TABLE_WRITE_ACCESS,
+      perms.KEY_WRITE_ACCESS,
       this.tableArn,
     );
   }
@@ -165,6 +179,7 @@ abstract class TableBase extends Resource implements ITable {
     return this.grant(
       identity,
       perms.TABLE_READ_WRITE_ACCESS,
+      perms.KEY_READ_WRITE_ACCESS,
       this.tableArn,
     );
   }
@@ -176,6 +191,7 @@ abstract class TableBase extends Resource implements ITable {
   private grant(
     grantee: iam.IGrantable,
     tableActions: string[],
+    keyActions: string[],
     resourceArn: string,
     ...otherResourceArns: (string | undefined)[]) {
     const resources = [resourceArn, ...otherResourceArns].filter(arn => arn != undefined);
@@ -186,6 +202,10 @@ abstract class TableBase extends Resource implements ITable {
       resourceArns: resources,
       resource: this,
     });
+
+    if (this.encryptionKey && keyActions && keyActions.length !== 0) {
+      this.encryptionKey.grant(grantee, ...keyActions);
+    }
 
     return grant;
   }
@@ -229,6 +249,27 @@ export interface TableProps {
    * @default RETAIN
    */
   readonly removalPolicy?: RemovalPolicy;
+  /**
+   * The kind of server-side encryption to apply to this table.
+   *
+   * If you choose KMS, you can specify a KMS key via `encryptionKey`. If
+   * encryption key is not specified, a key will automatically be created.
+   *
+   * If not specified, the table inherits the encryption setting from its parent table bucket.
+   *
+   * @default - Inherits the table bucket's encryption setting.
+   */
+  readonly encryption?: TableBucketEncryption;
+  /**
+   * External KMS key to use for table encryption.
+   *
+   * The `encryption` property must be either not specified or set to `KMS`.
+   * An error will be emitted if `encryption` is set to `S3_MANAGED`.
+   *
+   * @default - If `encryption` is set to `KMS` and this property is undefined,
+   * a new KMS key will be created and associated with this table.
+   */
+  readonly encryptionKey?: kms.IKey;
   /**
    * If true, indicates that you don't want to specify a schema for the table.
    *
@@ -374,6 +415,13 @@ export interface TableAttributes {
    * The table's ARN.
    */
   readonly tableArn: string;
+
+  /**
+   * KMS encryption key associated with this table.
+   *
+   * @default - no encryption key, grant methods will not grant KMS permissions
+   */
+  readonly encryptionKey?: kms.IKey;
 }
 
 /**
@@ -403,6 +451,7 @@ export class Table extends TableBase {
       public readonly tableName = attrs.tableName;
       public readonly tableArn = tableArn;
       public readonly tablePolicy?: CfnTablePolicy;
+      public readonly encryptionKey?: kms.IKey = attrs.encryptionKey;
       protected autoCreatePolicy: boolean = false;
 
       /**
@@ -479,6 +528,11 @@ export class Table extends TableBase {
   public readonly tableArn: string;
 
   /**
+   * Optional KMS encryption key associated with this table.
+   */
+  public readonly encryptionKey?: kms.IKey;
+
+  /**
    * The underlying CfnTable L1 resource
    * @internal
    */
@@ -509,6 +563,9 @@ export class Table extends TableBase {
 
     Table.validateTableName(props.tableName);
 
+    const { tableEncryption, encryptionKey } = this.parseEncryption(props);
+    this.encryptionKey = encryptionKey;
+
     this._resource = new CfnTable(this, id, {
       tableName: props.tableName,
       openTableFormat: props.openTableFormat,
@@ -520,10 +577,116 @@ export class Table extends TableBase {
       withoutMetadata: props.withoutMetadata ? 'Yes' : undefined,
     });
 
+    // TODO: Replace addPropertyOverride with native L1 property when CfnTable supports EncryptionConfiguration
+    if (tableEncryption) {
+      this._resource.addPropertyOverride('EncryptionConfiguration', {
+        SSEAlgorithm: tableEncryption.sseAlgorithm,
+        KMSKeyArn: tableEncryption.kmsKeyArn,
+      });
+    }
+
     this.namespace = props.namespace;
     this.tableName = props.tableName;
     this.tableArn = this._resource.attrTableArn;
     this._resource.applyRemovalPolicy(props.removalPolicy);
     this.node.addDependency(this.namespace);
+  }
+
+  /**
+   * Set up key properties and return the Table encryption property from the
+   * user's configuration, according to the following table:
+   *
+   * | props.encryption | props.encryptionKey | tableEncryption (return value)  | encryptionKey (return value)  |
+   * |------------------|---------------------|--------------------------------|-------------------------------|
+   * | undefined        | undefined           | undefined                      | undefined                     |
+   * | undefined        | k                   | aws:kms                        | k                             |
+   * | KMS              | undefined           | aws:kms                        | new key (allow maintenance SP)|
+   * | KMS              | k                   | aws:kms                        | k                             |
+   * | S3_MANAGED       | undefined           | AES256                         | undefined                     |
+   * | S3_MANAGED       | k                   | ERROR!                         | ERROR!                        |
+   */
+  private parseEncryption(props: TableProps): {
+    tableEncryption?: { sseAlgorithm: string; kmsKeyArn?: string };
+    encryptionKey?: kms.IKey;
+  } {
+    const encryptionType = props.encryption;
+    let key = props.encryptionKey;
+
+    if (encryptionType === undefined) {
+      if (key === undefined) {
+        // No encryption config — inherit bucket default
+        return { tableEncryption: undefined, encryptionKey: undefined };
+      } else {
+        return {
+          tableEncryption: {
+            sseAlgorithm: TableBucketEncryption.KMS,
+            kmsKeyArn: key.keyArn,
+          },
+          encryptionKey: key,
+        };
+      }
+    }
+
+    if (encryptionType === TableBucketEncryption.KMS) {
+      if (key === undefined) {
+        key = new kms.Key(this, 'Key', {
+          description: `Created by ${this.node.path}`,
+          enableKeyRotation: true,
+        });
+        this.allowTablesMaintenanceAccessToKey(key, props.namespace.tableBucket.tableBucketName);
+      }
+      return {
+        tableEncryption: {
+          sseAlgorithm: TableBucketEncryption.KMS,
+          kmsKeyArn: key.keyArn,
+        },
+        encryptionKey: key,
+      };
+    }
+
+    if (encryptionType === TableBucketEncryption.S3_MANAGED) {
+      if (key === undefined) {
+        return {
+          tableEncryption: {
+            sseAlgorithm: TableBucketEncryption.S3_MANAGED,
+          },
+        };
+      } else {
+        throw new UnscopedValidationError('InvalidEncryptionConfiguration', 'Expected encryption = `KMS` with user provided encryption key');
+      }
+    }
+
+    throw new UnscopedValidationError('UnknownEncryptionConfiguration', `Unknown encryption configuration detected: ${props.encryption} with key ${props.encryptionKey}`);
+  }
+
+  /**
+   * Allowlist S3 Tables Maintenance to access this table's encryption key
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables-kms-permissions.html
+   * @param encryptionKey The key to provide access to
+   * @param tableBucketName The name of the parent table bucket for the condition
+   */
+  private allowTablesMaintenanceAccessToKey(encryptionKey: kms.IKey, tableBucketName: string) {
+    const region = this.stack.region;
+    const account = this.stack.account;
+    const partition = this.stack.partition;
+
+    encryptionKey.addToResourcePolicy(new iam.PolicyStatement({
+      sid: 'AllowS3TablesMaintenanceAccess',
+      effect: iam.Effect.ALLOW,
+      principals: [
+        new iam.ServicePrincipal('maintenance.s3tables.amazonaws.com'),
+      ],
+      actions: [
+        'kms:GenerateDataKey',
+        'kms:Decrypt',
+      ],
+      resources: ['*'],
+      conditions: {
+        StringLike: {
+          'kms:EncryptionContext:aws:s3:arn': `arn:${partition}:s3tables:${region}:${account}:bucket/${tableBucketName}/*`,
+        },
+      },
+    }));
   }
 }

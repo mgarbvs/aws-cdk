@@ -1,0 +1,16 @@
+{
+  "version": "52.0.0",
+  "testCases": {
+    "TableEncryptionIntegTest/DefaultTest": {
+      "stacks": [
+        "TableEncKMSAutoKeyTest",
+        "TableEncKMSUserKeyTest",
+        "TableEncS3ManagedTest",
+        "TableEncOnlyKeyTest"
+      ],
+      "assertionStack": "TableEncryptionIntegTest/DefaultTest/DeployAssert",
+      "assertionStackName": "TableEncryptionIntegTestDefaultTestDeployAssert9B7F3EFB"
+    }
+  },
+  "minimumCliVersion": "2.1107.0"
+}

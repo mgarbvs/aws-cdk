@@ -1,0 +1,20 @@
+{
+  "version": "52.0.0",
+  "files": {
+    "d46c9ab150b5432a5fb76048f3fdaa3684fa1e83e6bdf89b087af468a58dd5da": {
+      "displayName": "TableEncS3ManagedTest Template",
+      "source": {
+        "path": "TableEncS3ManagedTest.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region-a65cc30b": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "d46c9ab150b5432a5fb76048f3fdaa3684fa1e83e6bdf89b087af468a58dd5da.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

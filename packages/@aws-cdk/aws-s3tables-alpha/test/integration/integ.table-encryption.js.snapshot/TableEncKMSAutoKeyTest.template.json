@@ -1,0 +1,167 @@
+{
+ "Resources": {
+  "TableBucket0BF18B0D": {
+   "Type": "AWS::S3Tables::TableBucket",
+   "Properties": {
+    "TableBucketName": "integ-table-enc-kms-auto",
+    "UnreferencedFileRemoval": {}
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "NamespaceADFEA57E": {
+   "Type": "AWS::S3Tables::Namespace",
+   "Properties": {
+    "Namespace": "test_namespace",
+    "TableBucketARN": {
+     "Fn::GetAtt": [
+      "TableBucket0BF18B0D",
+      "TableBucketARN"
+     ]
+    }
+   }
+  },
+  "TableKey25666F95": {
+   "Type": "AWS::KMS::Key",
+   "Properties": {
+    "Description": "Created by TableEncKMSAutoKeyTest/Table",
+    "EnableKeyRotation": true,
+    "KeyPolicy": {
+     "Statement": [
+      {
+       "Action": "kms:*",
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":iam::",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":root"
+          ]
+         ]
+        }
+       },
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+       ],
+       "Condition": {
+        "StringLike": {
+         "kms:EncryptionContext:aws:s3:arn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":s3tables:",
+            {
+             "Ref": "AWS::Region"
+            },
+            ":",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":bucket/",
+            {
+             "Ref": "TableBucket0BF18B0D"
+            },
+            "/*"
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "maintenance.s3tables.amazonaws.com"
+       },
+       "Resource": "*",
+       "Sid": "AllowS3TablesMaintenanceAccess"
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "DependsOn": [
+    "NamespaceADFEA57E"
+   ],
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain"
+  },
+  "Table4C2D914F": {
+   "Type": "AWS::S3Tables::Table",
+   "Properties": {
+    "Namespace": "test_namespace",
+    "OpenTableFormat": "ICEBERG",
+    "TableBucketARN": {
+     "Fn::GetAtt": [
+      "TableBucket0BF18B0D",
+      "TableBucketARN"
+     ]
+    },
+    "TableName": "test_table",
+    "EncryptionConfiguration": {
+     "SSEAlgorithm": "aws:kms",
+     "KMSKeyArn": {
+      "Fn::GetAtt": [
+       "TableKey25666F95",
+       "Arn"
+      ]
+     }
+    }
+   },
+   "DependsOn": [
+    "NamespaceADFEA57E"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

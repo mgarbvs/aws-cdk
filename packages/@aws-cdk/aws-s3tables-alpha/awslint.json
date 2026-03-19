@@ -13,6 +13,8 @@
     "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TableProps.namespace",
     "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TableBucketAttributes.encryptionKey",
     "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TableBucketProps.encryptionKey",
+    "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TableProps.encryptionKey",
+    "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TableAttributes.encryptionKey",
     "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TableBucketPolicyProps.tableBucket",
     "prefer-ref-interface:@aws-cdk/aws-s3tables-alpha.TablePolicyProps.table",
     "interface-extends-ref:@aws-cdk/aws-s3tables-alpha.INamespace",
